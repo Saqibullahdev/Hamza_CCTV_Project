@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Plus } from "lucide-react"
+import { Plus, CheckCircle2 } from "lucide-react"
 
 export function AddShopDialog() {
   const [open, setOpen] = useState(false)
@@ -25,6 +25,7 @@ export function AddShopDialog() {
   const [mobNo, setMobNo] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isSuccess, setIsSuccess] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,11 +45,17 @@ export function AddShopDialog() {
       return
     }
 
+    setIsSuccess(true)
+    setIsLoading(false)
     setShopName("")
     setMobNo("")
-    setOpen(false)
-    setIsLoading(false)
-    router.refresh()
+
+    // Refresh and close after a short delay to show success
+    setTimeout(() => {
+      setIsSuccess(false)
+      setOpen(false)
+      router.refresh()
+    }, 1500)
   }
 
   return (
@@ -65,36 +72,50 @@ export function AddShopDialog() {
           <DialogDescription>Add a new vendor/shop to your ledger</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="shopName">Shop Name</Label>
-              <Input
-                id="shopName"
-                placeholder="Enter shop name"
-                value={shopName}
-                onChange={(e) => setShopName(e.target.value)}
-                required
-              />
+          {isSuccess ? (
+            <div className="flex flex-col items-center justify-center py-8 space-y-4">
+              <CheckCircle2 className="h-12 w-12 text-green-500 animate-in zoom-in duration-300" />
+              <p className="text-lg font-semibold text-foreground">Shop Added Successfully!</p>
+              <p className="text-sm text-muted-foreground text-center">
+                The new shop has been added to your ledger.
+              </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="mobNo">Mobile Number</Label>
-              <Input
-                id="mobNo"
-                placeholder="Enter mobile number"
-                value={mobNo}
-                onChange={(e) => setMobNo(e.target.value)}
-                required
-              />
+          ) : (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="shopName">Shop Name</Label>
+                <Input
+                  id="shopName"
+                  placeholder="Enter shop name"
+                  value={shopName}
+                  onChange={(e) => setShopName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mobNo">Mobile Number</Label>
+                <Input
+                  id="mobNo"
+                  placeholder="Enter mobile number"
+                  value={mobNo}
+                  onChange={(e) => setMobNo(e.target.value)}
+                  required
+                />
+              </div>
+              {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-          </div>
+          )}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Adding..." : "Add Shop"}
-            </Button>
+            {!isSuccess && (
+              <>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Adding..." : "Add Shop"}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

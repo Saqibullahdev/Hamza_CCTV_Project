@@ -128,7 +128,9 @@ export function ViewInvoice({ invoiceId }: ViewInvoiceProps) {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{invoice.invoice_number}</h1>
+            <h1 className="text-2xl font-bold text-foreground">
+              Invoice #{invoice.serial_number ?? invoice.invoice_number}
+            </h1>
             <div className="flex items-center gap-2 mt-1">
               {getStatusBadge(invoice.payment_status)}
               <span className="text-muted-foreground">{format(new Date(invoice.invoice_date), "dd MMM yyyy")}</span>
@@ -239,7 +241,7 @@ export function ViewInvoice({ invoiceId }: ViewInvoiceProps) {
               </h3>
               <div className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1 text-sm">
                 <span className="font-semibold text-muted-foreground uppercase text-[10px]">Invoice #:</span>
-                <span className="font-bold">{invoice.serial_number ? String(invoice.serial_number).padStart(4, '0') : invoice.invoice_number}</span>
+                <span className="font-bold">{invoice.serial_number ?? invoice.invoice_number}</span>
                 <span className="font-semibold text-muted-foreground uppercase text-[10px]">Date:</span>
                 <span className="font-bold">{format(new Date(invoice.invoice_date), "dd MMM yyyy")}</span>
                 <span className="font-semibold text-muted-foreground uppercase text-[10px]">Payment:</span>
@@ -289,10 +291,6 @@ export function ViewInvoice({ invoiceId }: ViewInvoiceProps) {
                   <p>
                     <span className="text-muted-foreground">Name:</span>{" "}
                     <span className="font-medium">{invoice.customer_name}</span>
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">ID:</span>{" "}
-                    <span className="font-medium">{invoice.customer_id}</span>
                   </p>
                   {invoice.customer_phone && (
                     <p>

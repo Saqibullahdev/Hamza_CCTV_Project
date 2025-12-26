@@ -35,6 +35,13 @@ export function PurchasesList({ initialPurchases, shops }: PurchasesListProps) {
   const [shopFilter, setShopFilter] = useState<string>("all")
   const [viewingPurchase, setViewingPurchase] = useState<PurchasedCamera | null>(null)
 
+  // Sync state with props when data is refreshed from server
+  const [prevInitialPurchases, setPrevInitialPurchases] = useState(initialPurchases)
+  if (initialPurchases !== prevInitialPurchases) {
+    setPurchases(initialPurchases)
+    setPrevInitialPurchases(initialPurchases)
+  }
+
   const categories = [...new Set(purchases.map((p) => p.category))]
 
   const filteredPurchases = purchases.filter((purchase) => {

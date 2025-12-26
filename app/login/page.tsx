@@ -34,7 +34,7 @@ function LoginForm() {
 
             if (signInError) throw signInError
 
-            router.push("/")
+            router.push("/dashboard")
             router.refresh()
         } catch (err: any) {
             setError(err.message || "An error occurred during sign in")

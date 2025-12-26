@@ -11,7 +11,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Trash2, Plus, ChevronDown, Loader2, Printer, ArrowLeft, Cctv, Phone, MapPin } from "lucide-react"
+import { Trash2, Plus, ChevronDown, Loader2, Printer, ArrowLeft, Cctv, Phone, MapPin, FileQuestion, FileText, Check } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import Link from "next/link"
 import { format } from "date-fns"
 
@@ -55,6 +65,8 @@ export function CreateInvoiceForm() {
   const [loading, setLoading] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
   const [savedInvoice, setSavedInvoice] = useState<{ id: string; invoice_number: string; serial_number?: number } | null>(null)
+  const [isQuotation, setIsQuotation] = useState(false)
+  const [showQuotationDialog, setShowQuotationDialog] = useState(false)
 
   // Invoice details
   const [invoiceNumber] = useState(generateInvoiceNumber)
@@ -194,6 +206,11 @@ export function CreateInvoiceForm() {
   }
 
   const handlePrintWithSave = async () => {
+    if (isQuotation) {
+      setShowQuotationDialog(true)
+      return
+    }
+
     if (savedInvoice) {
       window.print()
       return
@@ -208,6 +225,14 @@ export function CreateInvoiceForm() {
     }
   }
 
+  const confirmQuotationPrint = () => {
+    setShowQuotationDialog(false)
+    // Small delay to allow the dialog overlay to fully close before printing
+    setTimeout(() => {
+      window.print()
+    }, 500)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between print:hidden">
@@ -218,24 +243,42 @@ export function CreateInvoiceForm() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Create Invoice</h1>
+            <h1 className="text-2xl font-bold text-foreground">Create {isQuotation ? "Quotation" : "Invoice"}</h1>
             <p className="text-muted-foreground">Fill in the details below</p>
           </div>
+        </div>
+        <div className="flex items-center gap-4 mr-4 print:hidden">
+          <Button
+            variant={isQuotation ? "default" : "outline"}
+            size="sm"
+            onClick={() => setIsQuotation(!isQuotation)}
+            className={`font-bold flex items-center gap-2 transition-all ${isQuotation ? 'bg-orange-500 hover:bg-orange-600 text-white border-orange-600' : ''}`}
+          >
+            {isQuotation ? <FileQuestion className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+            {isQuotation ? "QUOTATION MODE" : "INVOICE MODE"}
+          </Button>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handlePrintWithSave}>
             <Printer className="mr-2 h-4 w-4" />
-            Print
+            Print {isQuotation ? "Quotation" : ""}
           </Button>
-          {!savedInvoice ? (
-            <Button onClick={handleSave} disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Invoice
-            </Button>
-          ) : (
-            <Link href={`/invoices/${savedInvoice.id}`}>
-              <Button>View Invoice</Button>
-            </Link>
+          {!isQuotation && (
+            !savedInvoice ? (
+              <Button onClick={handleSave} disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Invoice
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-green-600 flex items-center gap-1">
+                  <Check className="h-4 w-4" /> Invoice Saved!
+                </span>
+                <Link href={`/invoices/${savedInvoice.id}`}>
+                  <Button>View Invoice</Button>
+                </Link>
+              </div>
+            )
           )}
         </div>
       </div>
@@ -248,7 +291,7 @@ export function CreateInvoiceForm() {
         </Card>
       )}
 
-      <div ref={printRef} className="space-y-6 print:p-0">
+      <div ref={printRef} className="space-y-6 print:p-0 print:bg-white print:text-black">
         {/* Professional Invoice Header (Print Optimized) */}
         <div className="hidden print:block border-b-4 border-foreground pb-4 mb-6">
           <div className="flex flex-col items-center justify-center text-center space-y-4">
@@ -257,6 +300,11 @@ export function CreateInvoiceForm() {
               <h1 className="text-4xl font-black tracking-tighter text-foreground uppercase">
                 HK TRADER
               </h1>
+              {isQuotation && (
+                <div className="ml-4 px-6 py-1 border-4 border-foreground text-foreground font-black text-2xl uppercase tracking-[0.2em] skew-x-[-10deg]">
+                  Quotation
+                </div>
+              )}
             </div>
 
             <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm font-medium">
@@ -335,19 +383,23 @@ export function CreateInvoiceForm() {
 
           <div className="space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-widest border-b border-foreground pb-1 w-fit">
-              Invoice Details
+              {isQuotation ? "Quotation Details" : "Invoice Details"}
             </h3>
             <div className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1 text-sm">
-              <span className="font-semibold text-muted-foreground uppercase text-[10px]">Invoice #:</span>
-              <span className="font-bold">{savedInvoice?.serial_number ? String(savedInvoice.serial_number).padStart(4, '0') : invoiceNumber}</span>
+              <span className="font-semibold text-muted-foreground uppercase text-[10px]">{isQuotation ? "Quotation #" : "Invoice #:"}</span>
+              <span className="font-bold">{isQuotation ? invoiceNumber : (savedInvoice?.serial_number ?? invoiceNumber)}</span>
               <span className="font-semibold text-muted-foreground uppercase text-[10px]">Date:</span>
               <span className="font-bold">{format(new Date(invoiceDate), "dd MMM yyyy")}</span>
               <span className="font-semibold text-muted-foreground uppercase text-[10px]">Payment:</span>
               <span className="font-bold uppercase">{paymentMethod || "Cash"}</span>
-              <span className="font-semibold text-muted-foreground uppercase text-[10px]">Status:</span>
-              <span className="font-black text-green-600 uppercase italic">
-                {paidAmount >= total ? 'PAID' : (paidAmount > 0 ? 'PARTIAL' : 'PENDING')}
-              </span>
+              {!isQuotation && (
+                <>
+                  <span className="font-semibold text-muted-foreground uppercase text-[10px]">Status:</span>
+                  <span className="font-black text-green-600 uppercase italic">
+                    {paidAmount >= total ? 'PAID' : (paidAmount > 0 ? 'PARTIAL' : 'PENDING')}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -362,7 +414,7 @@ export function CreateInvoiceForm() {
                   <div>
                     <Label>Invoice Number</Label>
                     <Input
-                      value={savedInvoice?.serial_number ? String(savedInvoice.serial_number).padStart(4, '0') : invoiceNumber}
+                      value={savedInvoice?.serial_number ?? invoiceNumber}
                       disabled
                       className="bg-muted"
                     />
@@ -387,10 +439,6 @@ export function CreateInvoiceForm() {
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                     />
-                  </div>
-                  <div>
-                    <Label>Customer ID</Label>
-                    <Input value={customerId} disabled className="bg-muted" />
                   </div>
                   <div>
                     <Label>Phone</Label>
@@ -582,15 +630,19 @@ export function CreateInvoiceForm() {
                   <span>Grand Total</span>
                   <span>PKR {total.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-xs font-bold uppercase border-t border-foreground/20 mt-1 pt-1">
-                  <span>Paid Amount</span>
-                  <span className="text-green-600">PKR {paidAmount.toLocaleString()}</span>
-                </div>
-                {remainingAmount > 0 && (
-                  <div className="flex justify-between text-xs font-bold uppercase text-red-500">
-                    <span>Remaining</span>
-                    <span>PKR {remainingAmount.toLocaleString()}</span>
-                  </div>
+                {!isQuotation && (
+                  <>
+                    <div className="flex justify-between text-xs font-bold uppercase border-t border-foreground/20 mt-1 pt-1">
+                      <span>Paid Amount</span>
+                      <span className="text-green-600">PKR {paidAmount.toLocaleString()}</span>
+                    </div>
+                    {remainingAmount > 0 && (
+                      <div className="flex justify-between text-xs font-bold uppercase text-red-500">
+                        <span>Remaining</span>
+                        <span>PKR {remainingAmount.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -677,6 +729,22 @@ export function CreateInvoiceForm() {
           </Card>
         </div>
       </div>
+
+      <AlertDialog open={showQuotationDialog} onOpenChange={setShowQuotationDialog}>
+        <AlertDialogContent className="print:hidden">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create Quotation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will generate a printable quotation. Quotations are not stored in the database.
+              Are you sure you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmQuotationPrint}>Confirm & Print</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

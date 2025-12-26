@@ -30,6 +30,13 @@ export function ShopsList({ initialShops }: ShopsListProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [editingShop, setEditingShop] = useState<Shop | null>(null)
 
+  // Sync state with props when data is refreshed from server
+  const [prevInitialShops, setPrevInitialShops] = useState(initialShops)
+  if (initialShops !== prevInitialShops) {
+    setShops(initialShops)
+    setPrevInitialShops(initialShops)
+  }
+
   const filteredShops = shops.filter(
     (shop) => shop.shop_name.toLowerCase().includes(searchQuery.toLowerCase()) || shop.mob_no.includes(searchQuery),
   )

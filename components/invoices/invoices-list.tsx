@@ -31,9 +31,16 @@ export function InvoicesList() {
     }
 
     if (searchQuery.trim()) {
-      query = query.or(
-        `invoice_number.ilike.%${searchQuery}%,customer_name.ilike.%${searchQuery}%,customer_id.ilike.%${searchQuery}%,customer_phone.ilike.%${searchQuery}%`,
-      )
+      const isNumeric = /^\d+$/.test(searchQuery)
+      if (isNumeric) {
+        query = query.or(
+          `invoice_number.ilike.%${searchQuery}%,customer_name.ilike.%${searchQuery}%,customer_id.ilike.%${searchQuery}%,customer_phone.ilike.%${searchQuery}%,serial_number.eq.${searchQuery}`,
+        )
+      } else {
+        query = query.or(
+          `invoice_number.ilike.%${searchQuery}%,customer_name.ilike.%${searchQuery}%,customer_id.ilike.%${searchQuery}%,customer_phone.ilike.%${searchQuery}%`,
+        )
+      }
     }
 
     const { data, error } = await query
@@ -99,7 +106,7 @@ export function InvoicesList() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by invoice #, customer name, ID, or phone..."
+            placeholder="Search by Serial #, Customer, ID, or Phone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -156,7 +163,8 @@ export function InvoicesList() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground">{invoice.invoice_number}</span>
+                          <span className="font-bold text-primary">#{invoice.serial_number ?? '---'}</span>
+                          <span className="text-xs text-muted-foreground">({invoice.invoice_number})</span>
                           {getStatusBadge(invoice.payment_status)}
                         </div>
                         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">

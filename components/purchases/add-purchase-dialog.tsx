@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Plus, ChevronDown, Download, Share2, Check, Loader2 } from "lucide-react"
+import { Plus, ChevronDown, Download, Share2, Check, Loader2, CheckCircle2 } from "lucide-react"
 import type { Shop, QRData } from "@/lib/types"
 
 interface AddPurchaseDialogProps {
@@ -131,6 +131,7 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
 
     setCreatedPurchase({ id: insertedData.id, qrData })
     setIsLoading(false)
+    router.refresh()
   }
 
   const handleDownloadQR = () => {
@@ -212,10 +213,17 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{createdPurchase ? "Purchase Created!" : "Add New Purchase"}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {createdPurchase ? (
+              <>
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                Purchase Added Successfully!
+              </>
+            ) : "Add New Purchase"}
+          </DialogTitle>
           <DialogDescription>
             {createdPurchase
-              ? "Your purchase has been recorded. Download or share the QR code."
+              ? "The purchase has been recorded. You can share the receipt or download the QR code."
               : "Record a new product purchase entry"}
           </DialogDescription>
         </DialogHeader>
