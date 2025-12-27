@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Printer, Download, Share2, Cctv, Phone, MapPin } from "lucide-react"
+import { ArrowLeft, Printer, Download, Share2, Phone, MapPin } from "lucide-react"
 import { format } from "date-fns"
 import QRCode from "qrcode"
 
@@ -149,12 +149,12 @@ export function ViewInvoice({ invoiceId }: ViewInvoiceProps) {
         </div>
       </div>
 
-      <div className="print:p-0 space-y-6">
+      <div className="flex flex-col gap-6 print:gap-4 print:p-0 print:m-0">
         {/* Professional Invoice Header (Print Optimized) */}
         <div className="hidden print:block border-b-4 border-foreground pb-4 mb-6">
           <div className="flex flex-col items-center justify-center text-center space-y-4">
             <div className="flex items-center gap-3">
-              <Cctv className="h-10 w-10 text-foreground" />
+              <img src="/logo.png" alt="HK TRADER Logo" className="h-16 w-auto" />
               <h1 className="text-4xl font-black tracking-tighter text-foreground uppercase">
                 HK TRADER
               </h1>
@@ -171,11 +171,18 @@ export function ViewInvoice({ invoiceId }: ViewInvoiceProps) {
               </div>
             </div>
 
-            <div className="flex gap-4">
-              {["Wifi Camera", "Computer Networking", "Biometric Access Control"].map((service) => (
+            <div className="grid grid-cols-3 gap-2 w-full max-w-2xl">
+              {[
+                "CCTV System",
+                "Networking System",
+                "Walk Through Gate",
+                "Biometric Access Control",
+                "Fire Alarm System",
+                "Intercom System",
+              ].map((service) => (
                 <span
                   key={service}
-                  className="px-4 py-1 border-2 border-foreground rounded-full text-xs font-bold uppercase"
+                  className="px-2 py-0.5 border border-foreground rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
                 >
                   {service}
                 </span>
@@ -203,11 +210,18 @@ export function ViewInvoice({ invoiceId }: ViewInvoiceProps) {
               </div>
               <div className="p-3 bg-muted rounded-lg border-l-4 border-primary">
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Services</h4>
-                <div className="flex flex-wrap gap-1">
-                  {["Wifi Camera", "Computer Networking", "Biometric Access Control"].map((service) => (
+                <div className="grid grid-cols-2 gap-1 mt-1">
+                  {[
+                    "CCTV System",
+                    "Networking System",
+                    "Walk Through Gate",
+                    "Biometric Access Control",
+                    "Fire Alarm System",
+                    "Intercom System",
+                  ].map((service) => (
                     <span
                       key={service}
-                      className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full border border-primary/20"
+                      className="px-1.5 py-0.5 bg-primary/10 text-primary text-[8px] rounded-full border border-primary/20 whitespace-nowrap text-center"
                     >
                       {service}
                     </span>

@@ -8,9 +8,11 @@ export default async function ViewInvoicePage({ params }: { params: Promise<{ id
 
   if (id === "new") {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader />
-        <main className="container mx-auto px-4 py-8">
+      <div className="min-h-screen bg-background print:bg-white print:min-h-0 print:h-auto">
+        <div className="print:hidden">
+          <DashboardHeader />
+        </div>
+        <main className="container mx-auto px-4 py-8 print:p-0 print:m-0 print:max-w-none print:w-full">
           <CreateInvoiceForm />
         </main>
       </div>
@@ -23,11 +25,11 @@ export default async function ViewInvoicePage({ params }: { params: Promise<{ id
   }
 
   return (
-    <div className="min-h-screen bg-background print:bg-white print:min-h-0">
+    <div className="min-h-screen bg-background print:bg-white print:min-h-0 print:h-auto">
       <div className="print:hidden">
         <DashboardHeader />
       </div>
-      <main className="container mx-auto px-4 py-8 print:p-0 print:m-0 print:max-w-none">
+      <main className="container mx-auto px-4 py-8 print:p-0 print:m-0 print:max-w-none print:w-full">
         <ViewInvoice invoiceId={id} />
       </main>
     </div>

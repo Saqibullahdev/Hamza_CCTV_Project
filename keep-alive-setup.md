@@ -36,6 +36,8 @@ Add the following **Repository secrets**:
 | `SUPABASE_URL` | Your Supabase Project URL |
 | `SUPABASE_KEY` | Your **service_role** secret key |
 
+sb_secret_E7wlsl9NU0U6Ohtf7Cn9Bw_4NL-xFMx
+https://kmavsrezejnnoripnunz.supabase.co
 ## How it Works
 1. **GitHub Action**: Every day at **4:30 PM PKT**, GitHub triggers an inline Node.js script.
 2. **Ping**: The script connects to Supabase and selects data from the `keep_alive` table.
