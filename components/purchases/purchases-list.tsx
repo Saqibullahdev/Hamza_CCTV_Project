@@ -21,19 +21,19 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Trash2, Search, Package, Eye } from "lucide-react"
 import { ViewPurchaseDialog } from "./view-purchase-dialog"
-import type { PurchasedCamera, Shop } from "@/lib/types"
+import type { PurchasedItem, Shop } from "@/lib/types"
 
 interface PurchasesListProps {
-  initialPurchases: PurchasedCamera[]
+  initialPurchases: PurchasedItem[]
   shops: Shop[]
 }
 
 export function PurchasesList({ initialPurchases, shops }: PurchasesListProps) {
-  const [purchases, setPurchases] = useState<PurchasedCamera[]>(initialPurchases)
+  const [purchases, setPurchases] = useState<PurchasedItem[]>(initialPurchases)
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [shopFilter, setShopFilter] = useState<string>("all")
-  const [viewingPurchase, setViewingPurchase] = useState<PurchasedCamera | null>(null)
+  const [viewingPurchase, setViewingPurchase] = useState<PurchasedItem | null>(null)
 
   // Sync state with props when data is refreshed from server
   const [prevInitialPurchases, setPrevInitialPurchases] = useState(initialPurchases)
@@ -46,7 +46,7 @@ export function PurchasesList({ initialPurchases, shops }: PurchasesListProps) {
 
   const filteredPurchases = purchases.filter((purchase) => {
     const matchesSearch =
-      purchase.camera_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      purchase.item_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
       purchase.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
       purchase.serial_numbers.some((sn) => sn.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesCategory = categoryFilter === "all" || purchase.category === categoryFilter
@@ -56,7 +56,7 @@ export function PurchasesList({ initialPurchases, shops }: PurchasesListProps) {
 
   const handleDelete = async (id: string) => {
     const supabase = createClient()
-    const { error } = await supabase.from("purchased_cameras").delete().eq("id", id)
+    const { error } = await supabase.from("purchased_items").delete().eq("id", id)
     if (!error) {
       setPurchases(purchases.filter((p) => p.id !== id))
     }
@@ -124,7 +124,7 @@ export function PurchasesList({ initialPurchases, shops }: PurchasesListProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Camera Type</TableHead>
+                    <TableHead>Item Type</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Shop</TableHead>
                     <TableHead>Qty</TableHead>
@@ -137,7 +137,7 @@ export function PurchasesList({ initialPurchases, shops }: PurchasesListProps) {
                 <TableBody>
                   {filteredPurchases.map((purchase) => (
                     <TableRow key={purchase.id}>
-                      <TableCell className="font-medium">{purchase.camera_type}</TableCell>
+                      <TableCell className="font-medium">{purchase.item_type}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">{purchase.category}</Badge>
                       </TableCell>

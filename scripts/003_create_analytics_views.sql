@@ -7,7 +7,7 @@ SELECT
   COUNT(*) as total_purchases,
   SUM(quantity) as total_quantity,
   SUM(unit_price * quantity) as total_amount
-FROM purchased_cameras
+FROM purchased_items
 GROUP BY purchase_date
 ORDER BY purchase_date DESC;
 
@@ -19,7 +19,7 @@ SELECT
   SUM(quantity) as total_quantity,
   SUM(unit_price * quantity) as total_amount,
   COUNT(DISTINCT shop_id) as shops_interacted
-FROM purchased_cameras
+FROM purchased_items
 GROUP BY DATE_TRUNC('month', purchase_date)
 ORDER BY month DESC;
 
@@ -30,7 +30,7 @@ SELECT
   COUNT(*) as total_purchases,
   SUM(quantity) as total_quantity,
   SUM(unit_price * quantity) as total_amount
-FROM purchased_cameras
+FROM purchased_items
 GROUP BY DATE_TRUNC('quarter', purchase_date)
 ORDER BY quarter DESC;
 
@@ -41,7 +41,7 @@ SELECT
   COUNT(*) as total_purchases,
   SUM(quantity) as total_quantity,
   SUM(unit_price * quantity) as total_amount
-FROM purchased_cameras
+FROM purchased_items
 GROUP BY DATE_TRUNC('year', purchase_date)
 ORDER BY year DESC;
 
@@ -52,7 +52,7 @@ SELECT
   COUNT(*) as total_purchases,
   SUM(quantity) as total_quantity,
   SUM(unit_price * quantity) as total_amount
-FROM purchased_cameras
+FROM purchased_items
 GROUP BY category
 ORDER BY total_quantity DESC;
 
@@ -66,6 +66,6 @@ SELECT
   COALESCE(SUM(pc.quantity), 0) as total_quantity,
   COALESCE(SUM(pc.unit_price * pc.quantity), 0) as total_amount
 FROM shops s
-LEFT JOIN purchased_cameras pc ON s.id = pc.shop_id
+LEFT JOIN purchased_items pc ON s.id = pc.shop_id
 GROUP BY s.id, s.shop_name, s.mob_no
 ORDER BY total_amount DESC;

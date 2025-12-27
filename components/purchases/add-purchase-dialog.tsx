@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { QRCodeSVG } from "qrcode.react"
@@ -29,8 +29,6 @@ interface AddPurchaseDialogProps {
   shops: Shop[]
 }
 
-const PRODUCT_CATEGORIES = ["Camera", "DVR", "NVR", "Cable", "Power Supply", "Accessory", "Hard Disk", "Other"]
-const BRANDS = ["Hikvision", "Dahua", "CP Plus", "Uniview", "Samsung", "Honeywell", "Bosch", "Other"]
 const PAYMENT_METHODS = ["Cash", "Bank Transfer", "JazzCash", "EasyPaisa", "Credit"]
 
 export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
@@ -47,6 +45,18 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
   const [quantity, setQuantity] = useState("")
   const [unitPrice, setUnitPrice] = useState("")
 
+  // Dynamic data state
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
+  const [allBrands, setAllBrands] = useState<{ id: string; name: string; category_id: string }[]>([])
+  const [existingProductNames, setExistingProductNames] = useState<string[]>([])
+  const [filteredBrands, setFilteredBrands] = useState<{ id: string; name: string }[]>([])
+
+  // Custom entry state
+  const [isCustomCategory, setIsCustomCategory] = useState(false)
+  const [customCategoryName, setCustomCategoryName] = useState("")
+  const [isCustomBrand, setIsCustomBrand] = useState(false)
+  const [customBrandName, setCustomBrandName] = useState("")
+
   const [showPaymentDetails, setShowPaymentDetails] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("")
   const [paidAmount, setPaidAmount] = useState("")
@@ -58,6 +68,45 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
   const qrRef = useRef<HTMLDivElement>(null)
 
   const router = useRouter()
+  const supabase = createClient()
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const [{ data: cats }, { data: brands }, { data: products }] = await Promise.all([
+        supabase.from("product_categories").select("*").order("name"),
+        supabase.from("product_brands").select("*").order("name"),
+        supabase.from("purchased_items").select("product_name"),
+      ])
+
+      if (cats) setCategories(cats)
+      if (brands) setAllBrands(brands)
+      if (products) {
+        const uniqueProducts = Array.from(new Set(products.map((p) => p.product_name).filter(Boolean)))
+        setExistingProductNames(uniqueProducts)
+      }
+    }
+
+    if (open) {
+      fetchData()
+    }
+  }, [open, supabase])
+
+  useEffect(() => {
+    if (category && category !== "custom") {
+      const selectedCat = categories.find((c) => c.name === category)
+      if (selectedCat) {
+        setFilteredBrands(allBrands.filter((b) => b.category_id === selectedCat.id))
+      } else {
+        setFilteredBrands([])
+      }
+    } else {
+      setFilteredBrands([])
+    }
+    // Only reset brand if it's not custom and category changed
+    if (category !== "custom" && !isCustomBrand) {
+      setBrand("")
+    }
+  }, [category, categories, allBrands, isCustomBrand])
 
   const totalPrice = (Number.parseFloat(unitPrice) || 0) * (Number.parseInt(quantity) || 0)
   const remainingAmount = totalPrice - (Number.parseFloat(paidAmount) || 0)
@@ -78,60 +127,123 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
       return
     }
 
-    const selectedShop = shops.find((s) => s.id === shopId)
+    try {
+      let finalCategory = category
+      let finalBrand = brand
 
-    const qrData: QRData = {
-      id: "", // Will be set after insert
-      serial_numbers: serialNumbersArray,
-      shop_name: selectedShop?.shop_name || "Unknown",
-      date: purchaseDate,
-      category,
-      camera_type: productName,
-      product_name: productName,
-      brand,
-      model_code: modelCode,
-      total_amount: totalPrice,
-    }
+      // Handle custom category
+      if (isCustomCategory && customCategoryName) {
+        const { data: newCat, error: catError } = await supabase
+          .from("product_categories")
+          .insert({ name: customCategoryName })
+          .select()
+          .single()
 
-    const supabase = createClient()
-    const { data: insertedData, error: insertError } = await supabase
-      .from("purchased_cameras")
-      .insert({
-        shop_id: shopId,
+        if (catError && catError.code !== "23505") { // Ignore unique violation
+          throw new Error("Failed to save custom category: " + catError.message)
+        }
+        finalCategory = customCategoryName
+      }
+
+      // Handle custom brand
+      if (isCustomBrand && customBrandName) {
+        // Need to find category ID first
+        let catId = categories.find((c) => c.name === finalCategory)?.id
+
+        // If it was a new category, we need to fetch it to get the ID
+        if (!catId) {
+          const { data: fetchedCat } = await supabase.from("product_categories").select("id").eq("name", finalCategory).single()
+          catId = fetchedCat?.id
+        }
+
+        if (catId) {
+          const { error: brandError } = await supabase
+            .from("product_brands")
+            .insert({ name: customBrandName, category_id: catId })
+
+          if (brandError && brandError.code !== "23505") { // Ignore unique violation
+            throw new Error("Failed to save custom brand: " + brandError.message)
+          }
+        }
+        finalBrand = customBrandName
+      }
+
+      const selectedShop = shops.find((s) => s.id === shopId)
+
+      const qrData: QRData = {
+        id: "", // Will be set after insert
         serial_numbers: serialNumbersArray,
-        camera_type: productName,
-        category,
-        unit_price: Number.parseFloat(unitPrice),
-        quantity: Number.parseInt(quantity),
-        purchase_date: purchaseDate,
+        shop_name: selectedShop?.shop_name || "Unknown",
+        date: purchaseDate,
+        category: finalCategory,
+        item_type: productName,
         product_name: productName,
-        brand,
+        brand: finalBrand,
         model_code: modelCode,
-        payment_method: paymentMethod || null,
-        paid_amount: Number.parseFloat(paidAmount) || 0,
-        remaining_amount: remainingAmount > 0 ? remainingAmount : 0,
-      })
-      .select()
-      .single()
+        total_amount: totalPrice,
+      }
 
-    if (insertError) {
-      setError(insertError.message)
+      const { data: insertedData, error: insertError } = await supabase
+        .from("purchased_items")
+        .insert({
+          shop_id: shopId,
+          serial_numbers: serialNumbersArray,
+          item_type: productName,
+          category: finalCategory,
+          unit_price: Number.parseFloat(unitPrice),
+          quantity: Number.parseInt(quantity),
+          purchase_date: purchaseDate,
+          product_name: productName,
+          brand: finalBrand,
+          model_code: modelCode,
+          payment_method: paymentMethod || null,
+          paid_amount: Number.parseFloat(paidAmount) || 0,
+          remaining_amount: remainingAmount > 0 ? remainingAmount : 0,
+        })
+        .select()
+        .single()
+
+      if (insertError) throw insertError
+
+      qrData.id = insertedData.id
+
+      await supabase
+        .from("purchased_items")
+        .update({
+          qr_code_data: qrData,
+        })
+        .eq("id", insertedData.id)
+
+      setCreatedPurchase({ id: insertedData.id, qrData })
       setIsLoading(false)
+      router.refresh()
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred")
+      alert(err.message || "An unexpected error occurred")
+      setIsLoading(false)
+    }
+  }
+
+  const handleValidationAndSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const missingFields = []
+    if (!shopId) missingFields.push("Shop / Vendor")
+    if (!productName) missingFields.push("Product Name")
+    if (!category || (category === "custom" && !customCategoryName)) missingFields.push("Category")
+    if (!brand || (brand === "custom" && !customBrandName)) missingFields.push("Brand")
+    if (!quantity) missingFields.push("Quantity")
+    if (!unitPrice) missingFields.push("Unit Price")
+    if (!serialNumbers.trim()) missingFields.push("Serial Numbers")
+
+    if (missingFields.length > 0) {
+      const msg = `Please fill in the following mandatory fields:\n- ${missingFields.join("\n- ")}`
+      setError(msg)
+      alert(msg)
       return
     }
 
-    qrData.id = insertedData.id
-
-    await supabase
-      .from("purchased_cameras")
-      .update({
-        qr_code_data: qrData,
-      })
-      .eq("id", insertedData.id)
-
-    setCreatedPurchase({ id: insertedData.id, qrData })
-    setIsLoading(false)
-    router.refresh()
+    handleSubmit(e)
   }
 
   const handleDownloadQR = () => {
@@ -185,6 +297,10 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
     setShowPaymentDetails(false)
     setCreatedPurchase(null)
     setError(null)
+    setIsCustomCategory(false)
+    setCustomCategoryName("")
+    setIsCustomBrand(false)
+    setCustomBrandName("")
     setOpen(false)
     router.refresh()
   }
@@ -236,7 +352,7 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
             <div className="text-center">
               <p className="font-medium">{productName}</p>
               <p className="text-sm text-muted-foreground">
-                {brand} - {category}
+                {(isCustomBrand ? customBrandName : brand)} - {(isCustomCategory ? customCategoryName : category)}
               </p>
               <p className="text-sm font-semibold text-primary">{formatCurrency(totalPrice)}</p>
             </div>
@@ -256,7 +372,7 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleValidationAndSubmit}>
             <div className="max-h-[60vh] space-y-4 overflow-y-auto py-4 pr-2">
               {/* Shop Selection */}
               <div className="space-y-2">
@@ -284,43 +400,121 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
                   <Label htmlFor="productName">Product Name</Label>
                   <Input
                     id="productName"
+                    list="product-names"
                     placeholder="e.g., 8MP Camera, DVR 8 Channel"
                     value={productName}
                     onChange={(e) => setProductName(e.target.value)}
                     required
                   />
+                  <datalist id="product-names">
+                    {existingProductNames.map((name) => (
+                      <option key={name} value={name} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="category">Category</Label>
-                    <Select value={category} onValueChange={setCategory} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PRODUCT_CATEGORIES.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {!isCustomCategory ? (
+                      <Select
+                        value={category}
+                        onValueChange={(val) => {
+                          if (val === "custom") {
+                            setIsCustomCategory(true)
+                            setCategory("custom")
+                          } else {
+                            setCategory(val)
+                          }
+                        }}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.name}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="custom" className="text-primary font-bold italic">Custom...</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="New category"
+                          value={customCategoryName}
+                          onChange={(e) => setCustomCategoryName(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setIsCustomCategory(false)
+                            setCategory("")
+                          }}
+                        >
+                          <Plus className="h-4 w-4 rotate-45" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="brand">Brand</Label>
-                    <Select value={brand} onValueChange={setBrand} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select brand" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {BRANDS.map((b) => (
-                          <SelectItem key={b} value={b}>
-                            {b}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {!isCustomBrand ? (
+                      <Select
+                        value={brand}
+                        onValueChange={(val) => {
+                          if (val === "custom") {
+                            setIsCustomBrand(true)
+                            setBrand("custom")
+                          } else {
+                            setBrand(val)
+                          }
+                        }}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select brand" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {filteredBrands.length > 0 ? (
+                            filteredBrands.map((b) => (
+                              <SelectItem key={b.id} value={b.name}>
+                                {b.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            !isCustomCategory && <SelectItem value="none" disabled>No brands for this category</SelectItem>
+                          )}
+                          <SelectItem value="custom" className="text-primary font-bold italic">Custom...</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="New brand"
+                          value={customBrandName}
+                          onChange={(e) => setCustomBrandName(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setIsCustomBrand(false)
+                            setBrand("")
+                          }}
+                        >
+                          <Plus className="h-4 w-4 rotate-45" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -467,7 +661,7 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
               <Button type="button" variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading || !shopId}>
+              <Button type="submit" disabled={isLoading} className="cursor-pointer">
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

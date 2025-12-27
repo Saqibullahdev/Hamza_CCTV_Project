@@ -120,11 +120,11 @@ function LoginForm() {
                     </form>
                 </CardContent>
                 <CardFooter className="flex flex-col items-center border-t border-primary/10 pt-6 space-y-4">
-                    <Link href="/" className="w-full">
-                        <Button variant="outline" className="w-full font-bold uppercase gap-2 active:scale-95 transition-transform">
+                    <Button asChild variant="outline" className="w-full font-bold uppercase gap-2 active:scale-95 transition-transform">
+                        <Link href="/">
                             Go to Dashboard
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                     <p className="text-xs text-muted-foreground text-center">
                         Restricted access. Authorized personnel only.
                     </p>

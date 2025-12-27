@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -25,8 +25,6 @@ import {
 import Link from "next/link"
 import { format } from "date-fns"
 
-const CATEGORIES = ["Camera", "DVR", "NVR", "Cable", "Power Supply", "Accessory", "Connector", "Other"]
-const BRANDS = ["Hikvision", "Dahua", "CP Plus", "Uniview", "Samsung", "Honeywell", "Other"]
 const PAYMENT_METHODS = ["Cash", "Bank Transfer", "JazzCash", "EasyPaisa", "Credit"]
 
 function generateInvoiceNumber() {
@@ -61,12 +59,19 @@ interface LineItem {
 
 export function CreateInvoiceForm() {
   const router = useRouter()
+  const supabase = createClient()
   const printRef = useRef<HTMLDivElement>(null)
   const [loading, setLoading] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
   const [savedInvoice, setSavedInvoice] = useState<{ id: string; invoice_number: string; serial_number?: number } | null>(null)
   const [isQuotation, setIsQuotation] = useState(false)
   const [showQuotationDialog, setShowQuotationDialog] = useState(false)
+
+  // Dynamic Data
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
+  const [allBrands, setAllBrands] = useState<{ id: string; name: string; category_id: string }[]>([])
+  const [filteredBrands, setFilteredBrands] = useState<{ id: string; name: string }[]>([])
+  const [existingItemNames, setExistingItemNames] = useState<string[]>([])
 
   // Invoice details
   const [invoiceNumber] = useState(generateInvoiceNumber)
@@ -88,6 +93,12 @@ export function CreateInvoiceForm() {
     quantity: 1,
   })
 
+  // Custom entry state for new item
+  const [isCustomCategory, setIsCustomCategory] = useState(false)
+  const [customCategoryName, setCustomCategoryName] = useState("")
+  const [isCustomBrand, setIsCustomBrand] = useState(false)
+  const [customBrandName, setCustomBrandName] = useState("")
+
   // Payment details
   const [paymentMethod, setPaymentMethod] = useState("")
   const [paidAmount, setPaidAmount] = useState(0)
@@ -98,21 +109,107 @@ export function CreateInvoiceForm() {
     "• Prices are subject to change without prior notice.\n• Payment is due within 30 days of invoice date.\n• Warranty is provided as per manufacturer's terms.\n• Installation charges may apply.",
   )
 
+  useEffect(() => {
+    const fetchData = async () => {
+      const [{ data: cats }, { data: brands }, { data: pCameras }, { data: iItems }] = await Promise.all([
+        supabase.from("product_categories").select("*").order("name"),
+        supabase.from("product_brands").select("*").order("name"),
+        supabase.from("purchased_items").select("product_name"),
+        supabase.from("invoice_items").select("item_name"),
+      ])
+
+      if (cats) setCategories(cats)
+      if (brands) setAllBrands(brands)
+
+      const names = new Set<string>()
+      pCameras?.forEach(p => p.product_name && names.add(p.product_name))
+      iItems?.forEach(i => i.item_name && names.add(i.item_name))
+      setExistingItemNames(Array.from(names))
+    }
+    fetchData()
+  }, [supabase])
+
+  useEffect(() => {
+    if (newItem.category && newItem.category !== "custom") {
+      const selectedCat = categories.find((c) => c.name === newItem.category)
+      if (selectedCat) {
+        setFilteredBrands(allBrands.filter((b) => b.category_id === selectedCat.id))
+      } else {
+        setFilteredBrands([])
+      }
+    } else {
+      setFilteredBrands([])
+    }
+
+    // Only reset brand if it's not custom and category changed
+    if (newItem.category !== "custom" && !isCustomBrand) {
+      setNewItem(prev => ({ ...prev, brand: "" }))
+    }
+  }, [newItem.category, categories, allBrands, isCustomBrand])
+
   // Calculations
   const subtotal = items.reduce((sum, item) => sum + item.line_total, 0)
   const total = subtotal - discount + tax
   const remainingAmount = Math.max(0, total - paidAmount)
 
-  const addItem = () => {
-    if (!newItem.item_name || !newItem.unit_price) return
+  const addItem = async () => {
+    if (!newItem.item_name || !newItem.unit_price) {
+      alert("Please enter both Item Name and Unit Price to add an item.")
+      return
+    }
+
+    let finalCategory = newItem.category || ""
+    let finalBrand = newItem.brand || ""
+
+    // Handle custom category
+    if (isCustomCategory && customCategoryName) {
+      const { data: newCat, error: catError } = await supabase
+        .from("product_categories")
+        .insert({ name: customCategoryName })
+        .select()
+        .single()
+
+      if (catError && catError.code !== "23505") {
+        console.error("Failed to save category:", catError)
+      } else {
+        // Refresh categories
+        const { data: updatedCats } = await supabase.from("product_categories").select("*").order("name")
+        if (updatedCats) setCategories(updatedCats)
+      }
+      finalCategory = customCategoryName
+    }
+
+    // Handle custom brand
+    if (isCustomBrand && customBrandName) {
+      let catId = categories.find(c => c.name === finalCategory)?.id
+      if (!catId) {
+        const { data: fetchedCat } = await supabase.from("product_categories").select("id").eq("name", finalCategory).single()
+        catId = fetchedCat?.id
+      }
+
+      if (catId) {
+        const { error: brandError } = await supabase
+          .from("product_brands")
+          .insert({ name: customBrandName, category_id: catId })
+
+        if (brandError && brandError.code !== "23505") {
+          console.error("Failed to save brand:", brandError)
+        } else {
+          // Refresh brands
+          const { data: updatedBrands } = await supabase.from("product_brands").select("*").order("name")
+          if (updatedBrands) setAllBrands(updatedBrands)
+        }
+      }
+      finalBrand = customBrandName
+    }
 
     const lineTotal = (newItem.unit_price || 0) * (newItem.quantity || 1)
     const item: LineItem = {
       id: crypto.randomUUID(),
       item_name: newItem.item_name || "",
       description: newItem.description || "",
-      category: newItem.category || "",
-      brand: newItem.brand || "",
+      category: finalCategory,
+      brand: finalBrand,
       model_code: newItem.model_code || "",
       unit_price: newItem.unit_price || 0,
       quantity: newItem.quantity || 1,
@@ -129,6 +226,10 @@ export function CreateInvoiceForm() {
       unit_price: 0,
       quantity: 1,
     })
+    setIsCustomCategory(false)
+    setCustomCategoryName("")
+    setIsCustomBrand(false)
+    setCustomBrandName("")
   }
 
   const removeItem = (id: string) => {
@@ -144,8 +245,6 @@ export function CreateInvoiceForm() {
     }
 
     setLoading(true)
-    const supabase = createClient()
-
     try {
       let paymentStatus: "pending" | "partial" | "paid" = "pending"
       if (paidAmount >= total) {
@@ -486,40 +585,114 @@ export function CreateInvoiceForm() {
               <div className="col-span-2">
                 <Label>Item Name *</Label>
                 <Input
+                  list="invoice-item-names"
                   placeholder="e.g., 8MP Camera"
                   value={newItem.item_name}
                   onChange={(e) => setNewItem({ ...newItem, item_name: e.target.value })}
                 />
+                <datalist id="invoice-item-names">
+                  {existingItemNames.map(name => <option key={name} value={name} />)}
+                </datalist>
               </div>
               <div>
                 <Label>Category</Label>
-                <Select value={newItem.category} onValueChange={(value) => setNewItem({ ...newItem, category: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {!isCustomCategory ? (
+                  <Select
+                    value={newItem.category}
+                    onValueChange={(val) => {
+                      if (val === "custom") {
+                        setIsCustomCategory(true)
+                        setNewItem(prev => ({ ...prev, category: "custom" }))
+                      } else {
+                        setNewItem(prev => ({ ...prev, category: val }))
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="custom" className="text-primary font-bold italic">Custom...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="flex gap-1">
+                    <Input
+                      placeholder="New cat"
+                      value={customCategoryName}
+                      onChange={e => setCustomCategoryName(e.target.value)}
+                      className="h-9"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9"
+                      onClick={() => {
+                        setIsCustomCategory(false)
+                        setNewItem(prev => ({ ...prev, category: "" }))
+                      }}
+                    >
+                      <Plus className="h-4 w-4 rotate-45" />
+                    </Button>
+                  </div>
+                )}
               </div>
               <div>
                 <Label>Brand</Label>
-                <Select value={newItem.brand} onValueChange={(value) => setNewItem({ ...newItem, brand: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BRANDS.map((brand) => (
-                      <SelectItem key={brand} value={brand}>
-                        {brand}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {!isCustomBrand ? (
+                  <Select
+                    value={newItem.brand}
+                    onValueChange={(val) => {
+                      if (val === "custom") {
+                        setIsCustomBrand(true)
+                        setNewItem(prev => ({ ...prev, brand: "custom" }))
+                      } else {
+                        setNewItem(prev => ({ ...prev, brand: val }))
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredBrands.length > 0 ? (
+                        filteredBrands.map((brand) => (
+                          <SelectItem key={brand.id} value={brand.name}>
+                            {brand.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        !isCustomCategory && <SelectItem value="none" disabled>No brands</SelectItem>
+                      )}
+                      <SelectItem value="custom" className="text-primary font-bold italic">Custom...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="flex gap-1">
+                    <Input
+                      placeholder="New brand"
+                      value={customBrandName}
+                      onChange={e => setCustomBrandName(e.target.value)}
+                      className="h-9"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9"
+                      onClick={() => {
+                        setIsCustomBrand(false)
+                        setNewItem(prev => ({ ...prev, brand: "" }))
+                      }}
+                    >
+                      <Plus className="h-4 w-4 rotate-45" />
+                    </Button>
+                  </div>
+                )}
               </div>
               <div>
                 <Label>Model/Code</Label>

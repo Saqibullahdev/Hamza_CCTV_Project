@@ -10,13 +10,13 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- 2. Enable RLS on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shops ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.purchased_cameras ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.purchased_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
 
 -- 3. Drop existing permissive policies (if any)
 DROP POLICY IF EXISTS "Allow all operations on shops" ON public.shops;
-DROP POLICY IF EXISTS "Allow all operations on purchased_cameras" ON public.purchased_cameras;
+DROP POLICY IF EXISTS "Allow all operations on purchased_items" ON public.purchased_items;
 DROP POLICY IF EXISTS "Allow all operations on invoices" ON public.invoices;
 DROP POLICY IF EXISTS "Allow all operations on invoice_items" ON public.invoice_items;
 
@@ -31,7 +31,7 @@ CREATE POLICY "Admins can see all profiles" ON public.profiles
 CREATE POLICY "Admins have full access on shops" ON public.shops
   FOR ALL TO authenticated USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
 
-CREATE POLICY "Admins have full access on purchased_cameras" ON public.purchased_cameras
+CREATE POLICY "Admins have full access on purchased_items" ON public.purchased_items
   FOR ALL TO authenticated USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
 
 CREATE POLICY "Admins have full access on invoices" ON public.invoices

@@ -8,7 +8,7 @@ export default async function QRPage() {
   const supabase = await createClient()
 
   const { data: purchases } = await supabase
-    .from("purchased_cameras")
+    .from("purchased_items")
     .select("*, shops(*)")
     .order("created_at", { ascending: false })
 

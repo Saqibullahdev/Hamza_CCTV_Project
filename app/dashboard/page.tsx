@@ -38,7 +38,7 @@ function DatabaseSetupPrompt() {
                     </li>
                     <li>
                       <code className="rounded bg-amber-100 px-1 dark:bg-amber-900">
-                        scripts/002_create_purchased_cameras_table.sql
+                        scripts/002_create_purchased_items_table.sql
                       </code>
                     </li>
                     <li>
@@ -88,8 +88,8 @@ export default async function DashboardPage() {
       supabase.from("monthly_analytics").select("*").limit(12),
       supabase.from("category_analytics").select("*"),
       supabase.from("top_shops").select("*").limit(5),
-      supabase.from("purchased_cameras").select("*, shops(*)").order("created_at", { ascending: false }).limit(5),
-      supabase.from("purchased_cameras").select("quantity, unit_price"),
+      supabase.from("purchased_items").select("*, shops(*)").order("created_at", { ascending: false }).limit(5),
+      supabase.from("purchased_items").select("quantity, unit_price"),
     ])
 
     // Check if views exist - if any view query fails with 404, show setup prompt

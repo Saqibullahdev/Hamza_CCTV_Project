@@ -6,11 +6,11 @@ export interface Shop {
   updated_at: string
 }
 
-export interface PurchasedCamera {
+export interface PurchasedItem {
   id: string
   shop_id: string
   serial_numbers: string[]
-  camera_type: string
+  item_type: string
   category: string
   unit_price: number
   quantity: number
@@ -34,7 +34,7 @@ export interface QRData {
   shop_name: string
   date: string
   category: string
-  camera_type: string
+  item_type: string
   product_name?: string
   brand?: string
   model_code?: string
@@ -73,7 +73,7 @@ export interface TopShop {
 }
 
 export interface SearchResult {
-  camera: PurchasedCamera
+  camera: PurchasedItem
   shop: Shop
 }
 

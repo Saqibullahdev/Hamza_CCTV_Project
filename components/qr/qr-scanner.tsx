@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ScanLine, Camera, Store, Phone, Calendar, Hash, X, Loader2, ImageIcon, Download, Share2 } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
-import type { PurchasedCamera, QRData } from "@/lib/types"
+import type { PurchasedItem, QRData } from "@/lib/types"
 
 function ScanResultSkeleton() {
   return (
@@ -59,7 +59,7 @@ function ScanResultSkeleton() {
 
 export function QRCodeScanner() {
   const [scannedData, setScannedData] = useState<QRData | null>(null)
-  const [purchaseDetails, setPurchaseDetails] = useState<PurchasedCamera | null>(null)
+  const [purchaseDetails, setPurchaseDetails] = useState<PurchasedItem | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [manualInput, setManualInput] = useState("")
@@ -155,7 +155,7 @@ export function QRCodeScanner() {
 
       const supabase = createClient()
       const { data: purchase } = await supabase
-        .from("purchased_cameras")
+        .from("purchased_items")
         .select("*, shops(*)")
         .eq("id", parsed.id)
         .single()

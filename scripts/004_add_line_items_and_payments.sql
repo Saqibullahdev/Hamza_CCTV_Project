@@ -1,7 +1,7 @@
--- Add new columns for line items and payment details to purchased_cameras table
+-- Add new columns for line items and payment details to purchased_items table
 -- Line items will be stored as JSONB array for flexibility
 
-ALTER TABLE purchased_cameras 
+ALTER TABLE purchased_items 
 ADD COLUMN IF NOT EXISTS product_name TEXT,
 ADD COLUMN IF NOT EXISTS brand TEXT,
 ADD COLUMN IF NOT EXISTS model_code TEXT,

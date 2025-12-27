@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { QrCode, Download } from "lucide-react"
-import type { PurchasedCamera } from "@/lib/types"
+import type { PurchasedItem } from "@/lib/types"
 
 interface QRCodeGeneratorProps {
-  purchases: PurchasedCamera[]
+  purchases: PurchasedItem[]
 }
 
 interface QRData {
@@ -19,7 +19,7 @@ interface QRData {
   shop_name: string
   date: string
   category: string
-  camera_type: string
+  item_type: string
 }
 
 export function QRCodeGenerator({ purchases }: QRCodeGeneratorProps) {
@@ -30,13 +30,13 @@ export function QRCodeGenerator({ purchases }: QRCodeGeneratorProps) {
 
   const qrData: QRData | null = selectedPurchase
     ? {
-        id: selectedPurchase.id,
-        serial_numbers: selectedPurchase.serial_numbers,
-        shop_name: selectedPurchase.shops?.shop_name || "Unknown",
-        date: selectedPurchase.purchase_date,
-        category: selectedPurchase.category,
-        camera_type: selectedPurchase.camera_type,
-      }
+      id: selectedPurchase.id,
+      serial_numbers: selectedPurchase.serial_numbers,
+      shop_name: selectedPurchase.shops?.shop_name || "Unknown",
+      date: selectedPurchase.purchase_date,
+      category: selectedPurchase.category,
+      item_type: selectedPurchase.item_type,
+    }
     : null
 
   const handleDownload = () => {
@@ -56,7 +56,7 @@ export function QRCodeGenerator({ purchases }: QRCodeGeneratorProps) {
       ctx?.drawImage(img, 0, 0)
       const pngFile = canvas.toDataURL("image/png")
       const downloadLink = document.createElement("a")
-      downloadLink.download = `qr-${selectedPurchase.camera_type}-${selectedPurchase.id.slice(0, 8)}.png`
+      downloadLink.download = `qr-${selectedPurchase.item_type}-${selectedPurchase.id.slice(0, 8)}.png`
       downloadLink.href = pngFile
       downloadLink.click()
     }
@@ -83,7 +83,7 @@ export function QRCodeGenerator({ purchases }: QRCodeGeneratorProps) {
             <SelectContent>
               {purchases.map((purchase) => (
                 <SelectItem key={purchase.id} value={purchase.id}>
-                  {purchase.camera_type} - {purchase.category} ({new Date(purchase.purchase_date).toLocaleDateString()})
+                  {purchase.item_type} - {purchase.category} ({new Date(purchase.purchase_date).toLocaleDateString()})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -94,8 +94,8 @@ export function QRCodeGenerator({ purchases }: QRCodeGeneratorProps) {
               <h4 className="mb-3 font-semibold">Purchase Summary</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Camera:</span>
-                  <span className="font-medium">{selectedPurchase.camera_type}</span>
+                  <span className="text-muted-foreground">Item Type:</span>
+                  <span className="font-medium">{selectedPurchase.item_type}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Category:</span>

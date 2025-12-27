@@ -23,11 +23,11 @@ export default function LandingPage() {
           <Link className="text-sm font-bold uppercase hover:text-primary transition-colors" href="#contact">
             Contact
           </Link>
-          <Link href="/dashboard">
-            <Button size="sm" className="font-bold uppercase rounded-full px-6 active:scale-95 transition-transform">
+          <Button asChild size="sm" className="font-bold uppercase rounded-full px-6 active:scale-95 transition-transform">
+            <Link href="/dashboard">
               Dashboard
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </nav>
       </header>
 
@@ -55,11 +55,11 @@ export default function LandingPage() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row pt-4">
-                  <Link href="/dashboard">
-                    <Button size="lg" className="font-black uppercase tracking-tight py-7 px-8 rounded-xl gap-2 text-lg shadow-[0_0_20px_rgba(var(--primary),0.3)] active:scale-95 transition-transform">
+                  <Button asChild size="lg" className="font-black uppercase tracking-tight py-7 px-8 rounded-xl gap-2 text-lg shadow-[0_0_20px_rgba(var(--primary),0.3)] active:scale-95 transition-transform">
+                    <Link href="/dashboard">
                       Go to Dashboard <ArrowRight className="h-5 w-5" />
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                   <Link href="#services">
                     <Button variant="outline" size="lg" className="font-black uppercase tracking-tight py-7 px-8 rounded-xl text-lg backdrop-blur-sm">
                       Explore Services

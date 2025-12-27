@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Camera, Store, Phone, Calendar, Hash, Download, Share2, CreditCard } from "lucide-react"
-import type { PurchasedCamera, QRData } from "@/lib/types"
+import type { PurchasedItem, QRData } from "@/lib/types"
 
 interface ViewPurchaseDialogProps {
-  purchase: PurchasedCamera
+  purchase: PurchasedItem
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -32,7 +32,7 @@ export function ViewPurchaseDialog({ purchase, open, onOpenChange }: ViewPurchas
     shop_name: purchase.shops?.shop_name || "Unknown",
     date: purchase.purchase_date,
     category: purchase.category,
-    camera_type: purchase.product_name || purchase.camera_type,
+    item_type: purchase.product_name || purchase.item_type,
     product_name: purchase.product_name,
     brand: purchase.brand,
     model_code: purchase.model_code,
@@ -56,7 +56,7 @@ export function ViewPurchaseDialog({ purchase, open, onOpenChange }: ViewPurchas
       ctx?.drawImage(img, 0, 0)
       const pngFile = canvas.toDataURL("image/png")
       const downloadLink = document.createElement("a")
-      downloadLink.download = `qr-${purchase.product_name || purchase.camera_type}-${purchase.id.slice(0, 8)}.png`
+      downloadLink.download = `qr-${purchase.product_name || purchase.item_type}-${purchase.id.slice(0, 8)}.png`
       downloadLink.href = pngFile
       downloadLink.click()
     }
@@ -66,7 +66,7 @@ export function ViewPurchaseDialog({ purchase, open, onOpenChange }: ViewPurchas
   }
 
   const handleShareWhatsApp = () => {
-    const message = `*Purchase Receipt*\n\nProduct: ${purchase.product_name || purchase.camera_type}\nBrand: ${purchase.brand || "N/A"}\nCategory: ${purchase.category}\nModel: ${purchase.model_code || "N/A"}\nQuantity: ${purchase.quantity}\nTotal: ${formatCurrency(purchase.unit_price * purchase.quantity)}\nDate: ${purchase.purchase_date}\nShop: ${purchase.shops?.shop_name || "Unknown"}\n\nSerial Numbers:\n${purchase.serial_numbers.join("\n")}`
+    const message = `*Purchase Receipt*\n\nProduct: ${purchase.product_name || purchase.item_type}\nBrand: ${purchase.brand || "N/A"}\nCategory: ${purchase.category}\nModel: ${purchase.model_code || "N/A"}\nQuantity: ${purchase.quantity}\nTotal: ${formatCurrency(purchase.unit_price * purchase.quantity)}\nDate: ${purchase.purchase_date}\nShop: ${purchase.shops?.shop_name || "Unknown"}\n\nSerial Numbers:\n${purchase.serial_numbers.join("\n")}`
 
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, "_blank")
@@ -106,7 +106,7 @@ export function ViewPurchaseDialog({ purchase, open, onOpenChange }: ViewPurchas
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Product:</span>
-                <span className="font-medium">{purchase.product_name || purchase.camera_type}</span>
+                <span className="font-medium">{purchase.product_name || purchase.item_type}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Category:</span>

@@ -1,9 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import type { PurchasedCamera } from "@/lib/types"
+import type { PurchasedItem } from "@/lib/types"
 
 interface RecentPurchasesProps {
-  data: PurchasedCamera[]
+  data: PurchasedItem[]
 }
 
 export function RecentPurchases({ data }: RecentPurchasesProps) {
@@ -19,7 +19,7 @@ export function RecentPurchases({ data }: RecentPurchasesProps) {
     <Card>
       <CardHeader>
         <CardTitle>Recent Purchases</CardTitle>
-        <CardDescription>Latest camera purchases added to inventory</CardDescription>
+        <CardDescription>Latest items added to inventory</CardDescription>
       </CardHeader>
       <CardContent>
         {data.length > 0 ? (
@@ -28,7 +28,7 @@ export function RecentPurchases({ data }: RecentPurchasesProps) {
               <div key={purchase.id} className="flex items-center justify-between rounded-lg border border-border p-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground">{purchase.camera_type}</span>
+                    <span className="font-medium text-foreground">{purchase.item_type}</span>
                     <Badge variant="secondary">{purchase.category}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">From: {purchase.shops?.shop_name || "Unknown Shop"}</p>

@@ -11,9 +11,9 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Search, Camera, Store, Phone, Calendar, Hash, Loader2 } from "lucide-react"
-import type { PurchasedCamera } from "@/lib/types"
+import type { PurchasedItem } from "@/lib/types"
 
-interface SearchResult extends PurchasedCamera {
+interface SearchResult extends PurchasedItem {
   matchedSerialNumber: string
 }
 
@@ -84,7 +84,7 @@ export function SerialNumberSearch() {
 
     const supabase = createClient()
     const { data } = await supabase
-      .from("purchased_cameras")
+      .from("purchased_items")
       .select("*, shops(*)")
       .contains("serial_numbers", [query.trim()])
 
@@ -158,7 +158,7 @@ export function SerialNumberSearch() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
                       <Camera className="h-5 w-5" />
-                      {result.product_name || result.camera_type}
+                      {result.product_name || result.item_type}
                     </CardTitle>
                     <Badge variant="secondary">{result.category}</Badge>
                   </div>
