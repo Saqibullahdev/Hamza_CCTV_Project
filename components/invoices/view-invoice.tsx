@@ -9,9 +9,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Printer, Download, Share2, Phone, MapPin } from "lucide-react"
+import { ArrowLeft, Printer, Download, Share2, Phone, MapPin, Edit, Trash2, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import QRCode from "qrcode"
+import { useRouter } from "next/navigation"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { toast } from "sonner" // Assuming sonner is used for toasts, checking package.json might be good but common in these templates
 
 interface ViewInvoiceProps {
   invoiceId: string
@@ -23,6 +36,9 @@ export function ViewInvoice({ invoiceId }: ViewInvoiceProps) {
   const [loading, setLoading] = useState(true)
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("")
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const router = useRouter()
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   useEffect(() => {
     async function fetchInvoice() {
@@ -84,6 +100,26 @@ export function ViewInvoice({ invoiceId }: ViewInvoiceProps) {
     window.open(`https://wa.me/?text=${message}`, "_blank")
   }
 
+  const handleDelete = async () => {
+    if (!invoice) return
+    setDeleteLoading(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from("invoices").delete().eq("id", invoice.id)
+      if (error) throw error
+
+      // toast.success("Invoice deleted successfully")
+      router.push("/invoices")
+      router.refresh()
+    } catch (error: any) {
+      console.error("Error deleting invoice:", error)
+      alert("Failed to delete invoice: " + error.message)
+    } finally {
+      setDeleteLoading(false)
+      setShowDeleteDialog(false)
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "paid":
@@ -138,6 +174,16 @@ export function ViewInvoice({ invoiceId }: ViewInvoiceProps) {
           </div>
         </div>
         <div className="flex gap-2">
+          <Link href={`/invoices/${invoiceId}/edit`}>
+            <Button variant="outline">
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+          </Link>
+          <Button variant="outline" className="text-destructive hover:bg-destructive hover:text-white" onClick={() => setShowDeleteDialog(true)}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </Button>
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
             Print
@@ -424,6 +470,29 @@ export function ViewInvoice({ invoiceId }: ViewInvoiceProps) {
       </div>
 
       <canvas ref={canvasRef} className="hidden" />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the invoice
+              #{invoice.serial_number ?? invoice.invoice_number} and all its items.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteLoading}
+            >
+              {deleteLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

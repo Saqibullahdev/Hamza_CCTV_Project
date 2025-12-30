@@ -882,8 +882,17 @@ export function CreateInvoiceForm() {
                       />
                     </div>
                     <div>
+                      <Label>Discount</Label>
+                      <Input
+                        type="number"
+                        value={discount || ""}
+                        onChange={(e) => setDiscount(Number.parseFloat(e.target.value) || 0)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
                       <Label>Remaining Amount</Label>
-                      <Input value={`Rs ${remainingAmount.toLocaleString()}`} disabled className="bg-muted" />
+                      <Input value={`PKR ${remainingAmount.toLocaleString()}`} disabled className="bg-muted" />
                     </div>
                   </div>
                   <div>

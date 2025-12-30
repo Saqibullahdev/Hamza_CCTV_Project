@@ -6,16 +6,36 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Camera, Store, Phone, Calendar, Hash, Download, Share2, CreditCard } from "lucide-react"
-import type { PurchasedItem, QRData } from "@/lib/types"
+import { Camera, Store, Phone, Calendar, Hash, Download, Share2, CreditCard, Edit, Trash2, Loader2, AlertTriangle } from "lucide-react"
+import type { PurchasedItem, QRData, Shop } from "@/lib/types"
+import { useState } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { EditPurchaseDialog } from "./edit-purchase-dialog"
 
 interface ViewPurchaseDialogProps {
   purchase: PurchasedItem
+  shops: Shop[]
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function ViewPurchaseDialog({ purchase, open, onOpenChange }: ViewPurchaseDialogProps) {
+export function ViewPurchaseDialog({ purchase, shops, open, onOpenChange }: ViewPurchaseDialogProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
   const qrRef = useRef<HTMLDivElement>(null)
 
   const formatCurrency = (amount: number) => {
@@ -70,6 +90,21 @@ export function ViewPurchaseDialog({ purchase, open, onOpenChange }: ViewPurchas
 
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, "_blank")
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      const { error } = await supabase.from("purchased_items").delete().eq("id", purchase.id)
+      if (error) throw error
+      onOpenChange(false)
+      setShowDeleteDialog(false)
+      router.refresh()
+    } catch (err: any) {
+      alert("Failed to delete purchase: " + err.message)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const totalAmount = purchase.unit_price * purchase.quantity
@@ -213,7 +248,56 @@ export function ViewPurchaseDialog({ purchase, open, onOpenChange }: ViewPurchas
               ))}
             </div>
           </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button className="flex-1" onClick={() => setShowEditDialog(true)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit Purchase
+            </Button>
+            <Button variant="destructive" className="flex-1" onClick={() => setShowDeleteDialog(true)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          </div>
         </div>
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                Are you sure?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This action will permanently delete this purchase entry for{" "}
+                <span className="font-semibold text-foreground">
+                  {purchase.product_name || purchase.item_type}
+                </span>. This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={isDeleting}
+              >
+                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Delete Permanently
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <EditPurchaseDialog
+          purchase={purchase}
+          shops={shops}
+          open={showEditDialog}
+          onOpenChange={(val: boolean) => {
+            setShowEditDialog(val)
+            if (!val) onOpenChange(false) // Close view dialog too if edit is closed (or just refresh)
+          }}
+        />
       </DialogContent>
     </Dialog>
   )

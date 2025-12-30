@@ -197,6 +197,7 @@ export function PurchasesList({ initialPurchases, shops }: PurchasesListProps) {
       {viewingPurchase && (
         <ViewPurchaseDialog
           purchase={viewingPurchase}
+          shops={shops}
           open={!!viewingPurchase}
           onOpenChange={(open) => !open && setViewingPurchase(null)}
         />

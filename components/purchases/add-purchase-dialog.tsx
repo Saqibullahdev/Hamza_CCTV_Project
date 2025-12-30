@@ -60,6 +60,7 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
   const [showPaymentDetails, setShowPaymentDetails] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("")
   const [paidAmount, setPaidAmount] = useState("")
+  const [discount, setDiscount] = useState("")
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -108,7 +109,8 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
     }
   }, [category, categories, allBrands, isCustomBrand])
 
-  const totalPrice = (Number.parseFloat(unitPrice) || 0) * (Number.parseInt(quantity) || 0)
+  const subtotal = (Number.parseFloat(unitPrice) || 0) * (Number.parseInt(quantity) || 0)
+  const totalPrice = Math.max(0, subtotal - (Number.parseFloat(discount) || 0))
   const remainingAmount = totalPrice - (Number.parseFloat(paidAmount) || 0)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -198,6 +200,7 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
           model_code: modelCode,
           payment_method: paymentMethod || null,
           paid_amount: Number.parseFloat(paidAmount) || 0,
+          discount: Number.parseFloat(discount) || 0,
           remaining_amount: remainingAmount > 0 ? remainingAmount : 0,
         })
         .select()
@@ -294,6 +297,7 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
     setPurchaseDate(new Date().toISOString().split("T")[0])
     setPaymentMethod("")
     setPaidAmount("")
+    setDiscount("")
     setShowPaymentDetails(false)
     setCreatedPurchase(null)
     setError(null)
@@ -631,8 +635,31 @@ export function AddPurchaseDialog({ shops }: AddPurchaseDialogProps) {
                     />
                   </div>
 
-                  {totalPrice > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="discount">Discount (Rs)</Label>
+                    <Input
+                      id="discount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={discount}
+                      onChange={(e) => setDiscount(e.target.value)}
+                    />
+                  </div>
+
+                  {subtotal > 0 && (
                     <div className="rounded-lg border border-border p-3 space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Subtotal:</span>
+                        <span>{formatCurrency(subtotal)}</span>
+                      </div>
+                      {Number.parseFloat(discount) > 0 && (
+                        <div className="flex items-center justify-between text-sm text-red-500">
+                          <span className="text-muted-foreground">Discount:</span>
+                          <span>-{formatCurrency(Number.parseFloat(discount))}</span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Total Amount:</span>
                         <span>{formatCurrency(totalPrice)}</span>
