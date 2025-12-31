@@ -167,6 +167,12 @@ export function ViewPurchaseDialog({ purchase, shops, open, onOpenChange }: View
                 <span className="text-muted-foreground">Unit Price:</span>
                 <span className="font-medium">{formatCurrency(purchase.unit_price)}</span>
               </div>
+              {purchase.discount && purchase.discount > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Discount:</span>
+                  <span className="font-medium text-red-600">- {formatCurrency(purchase.discount)}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Total Amount:</span>
                 <span className="font-semibold text-primary">{formatCurrency(totalAmount)}</span>

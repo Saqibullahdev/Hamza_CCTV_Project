@@ -25,6 +25,7 @@ export interface PurchasedItem {
   payment_method?: string
   paid_amount?: number
   remaining_amount?: number
+  discount?: number
   qr_code_data?: QRData
 }
 

@@ -43,7 +43,7 @@ export function EditPurchaseDialog({ purchase, shops, open, onOpenChange }: Edit
     const [unitPrice, setUnitPrice] = useState(purchase.unit_price.toString())
     const [paymentMethod, setPaymentMethod] = useState(purchase.payment_method || "")
     const [paidAmount, setPaidAmount] = useState(purchase.paid_amount?.toString() || "0")
-    const [discount, setDiscount] = useState((purchase as any).discount?.toString() || "0")
+    const [discount, setDiscount] = useState(purchase.discount?.toString() || "0")
 
     const [showPaymentDetails, setShowPaymentDetails] = useState(true)
     const [isLoading, setIsLoading] = useState(false)

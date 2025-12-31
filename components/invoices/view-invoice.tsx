@@ -435,6 +435,12 @@ export function ViewInvoice({ invoiceId }: ViewInvoiceProps) {
                   <span>Subtotal</span>
                   <span>PKR {invoice.subtotal.toLocaleString()}</span>
                 </div>
+                {invoice.discount > 0 && (
+                  <div className="flex justify-between text-xs font-bold uppercase text-red-600">
+                    <span>Discount</span>
+                    <span>- PKR {invoice.discount.toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-base font-black uppercase border-t border-foreground mt-1 pt-1">
                   <span>Grand Total</span>
                   <span>PKR {invoice.total.toLocaleString()}</span>
@@ -443,6 +449,12 @@ export function ViewInvoice({ invoiceId }: ViewInvoiceProps) {
                   <span>Paid Amount</span>
                   <span className="text-green-600">PKR {invoice.paid_amount.toLocaleString()}</span>
                 </div>
+                {invoice.remaining_amount > 0 && (
+                  <div className="flex justify-between text-xs font-bold uppercase">
+                    <span>Remaining</span>
+                    <span className="text-red-600">PKR {invoice.remaining_amount.toLocaleString()}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -455,6 +467,38 @@ export function ViewInvoice({ invoiceId }: ViewInvoiceProps) {
 
         {/* Existing Web Footer Components (Hidden on Print) */}
         <div className="print:hidden space-y-6">
+          {/* Payment Summary Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Payment Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-medium">PKR {invoice.subtotal.toLocaleString()}</span>
+              </div>
+              {invoice.discount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Discount</span>
+                  <span className="font-medium text-red-600">- PKR {invoice.discount.toLocaleString()}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm border-t pt-2">
+                <span className="font-semibold">Grand Total</span>
+                <span className="font-bold text-primary">PKR {invoice.total.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Paid Amount</span>
+                <span className="font-medium text-green-600">PKR {invoice.paid_amount.toLocaleString()}</span>
+              </div>
+              {invoice.remaining_amount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Remaining</span>
+                  <span className="font-medium text-red-600">PKR {invoice.remaining_amount.toLocaleString()}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
           {/* Terms, Notes, etc. are already handled by hiding this parent div */}
           {invoice.notes && (
             <Card>
